@@ -1,49 +1,81 @@
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { logout, isAuthenticated } from "../services/authService.js";
-import { useEffect } from "react";
+import { isAuthenticated, getCurrentUserFromAPI, logout } from "../services/authService";
+import "./Dashboard.css";
 
-function Dashboard() {
+const Dashboard = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      navigate("/");
-    }
+    const fetchUserData = async () => {
+      if (!isAuthenticated()) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        // Fetch fresh user data from /me endpoint
+        const userData = await getCurrentUserFromAPI();
+        setUser(userData);
+      } catch (err) {
+        setError("Failed to load user data. Please login again.");
+        console.error(err);
+        // If token is invalid, redirect to login
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
   }, [navigate]);
 
   const handleLogout = () => {
     logout();
-    navigate("/");
+    navigate("/login");
   };
 
-  const goToProfile = () => {
-    navigate("/profile"); // make sure you have a Profile.jsx route
-  };
+  if (loading) {
+    return (
+      <div className="dashboard-container">
+        <div className="loading">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard-container">
+        <div className="error-message">{error}</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="dashboard">
-      <h2>Welcome, John Doe!</h2>
-      <p style={{ textAlign: "center", color: "#555", marginBottom: "20px" }}>
-        Here's a quick overview of your account.
-      </p>
-
-      <div className="dashboard-cards">
-        <div className="card-small">
-          <h3>Username</h3>
-          <p>johndoe</p>
-        </div>
-
-        <div className="card-small">
-          <h3>Email</h3>
-          <p>johndoe@email.com</p>
-        </div>
-      </div>
-
-        <button className="logout" onClick={handleLogout}>
+    <div className="dashboard-container">
+      <div className="dashboard-header">
+        <h1>Welcome to Dashboard</h1>
+        <button onClick={handleLogout} className="logout-button">
           Logout
         </button>
       </div>
+      <div className="dashboard-content">
+        <div className="user-info">
+          <h2>User Information</h2>
+          <p><strong>ID:</strong> {user.id}</p>
+          <p><strong>Username:</strong> {user.username}</p>
+          <p><strong>Email:</strong> {user.email}</p>
+        </div>
+        
+        
+      </div>
+    </div>
   );
-}
+};
 
 export default Dashboard;

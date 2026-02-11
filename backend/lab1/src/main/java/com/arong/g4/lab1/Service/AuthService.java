@@ -1,10 +1,10 @@
-package com.arong.lab1.service;
+package com.arong.g4.lab1.Service;
 
-import com.arong.lab1.model.User;
-import com.arong.lab1.repository.UserRepository;
+import com.arong.g4.lab1.model.User;
+import com.arong.g4.lab1.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import java.util.Optional;
 
 @Service
 public class AuthService {
@@ -12,27 +12,36 @@ public class AuthService {
     @Autowired
     private UserRepository userRepository;
 
-    public User register(User user) throws Exception {
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    public User register(User user) {
+        // Check if username already exists
         if (userRepository.findByUsername(user.getUsername()).isPresent()) {
-            throw new Exception("Username already exists");
+            throw new RuntimeException("Username already exists");
         }
+
+        // Check if email already exists
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            throw new Exception("Email already exists");
+            throw new RuntimeException("Email already exists");
         }
-        // For simplicity, storing password as plain text (not secure!)
+
+        // Hash password
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        // Save user
         return userRepository.save(user);
     }
 
-    public User login(String identifier, String password) throws Exception {
-        Optional<User> userOpt = userRepository.findByUsername(identifier);
-        if (userOpt.isEmpty()) {
-            userOpt = userRepository.findByEmail(identifier);
+    public User getUserByUsername(String username) {
+        // First try to find by username
+        User user = userRepository.findByUsername(username).orElse(null);
+
+        // If not found, try to find by email
+        if (user == null) {
+            user = userRepository.findByEmail(username).orElse(null);
         }
 
-        if (userOpt.isEmpty() || !userOpt.get().getPassword().equals(password)) {
-            throw new Exception("Invalid credentials");
-        }
-
-        return userOpt.get();
+        return user;
     }
 }

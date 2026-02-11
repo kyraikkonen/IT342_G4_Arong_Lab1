@@ -1,54 +1,97 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { register } from "../services/authService.js";
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { register } from "../services/authService";
+import "./Register.css";
 
-function Register() {
-  const [form, setForm] = useState({
+const Register = () => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
     username: "",
     email: "",
-    password: ""
+    password: "",
   });
   const [error, setError] = useState("");
-  const navigate = useNavigate();
+  const [success, setSuccess] = useState("");
 
-  const handleRegister = async () => {
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    console.log("Attempting registration with:", formData);
+
     try {
-      await register(form);
-      navigate("/");
+      const user = await register(formData);
+      console.log("Registration successful:", user);
+      setSuccess("Registration successful! Redirecting to login...");
+      
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
     } catch (err) {
+      console.error("Registration error:", err.message);
       setError(err.message);
     }
   };
 
   return (
-    <div className="card">
-      <h2>Register</h2>
-
-      {error && <div className="error">{error}</div>}
-
-      <input
-        placeholder="Username"
-        onChange={(e) => setForm({ ...form, username: e.target.value })}
-      />
-
-      <input
-        placeholder="Email"
-        onChange={(e) => setForm({ ...form, email: e.target.value })}
-      />
-
-      <input
-        type="password"
-        placeholder="Password"
-        onChange={(e) => setForm({ ...form, password: e.target.value })}
-      />
-
-      <button onClick={handleRegister}>Register</button>
-
-      <div className="link">
-        <Link to="/">Back to Login</Link>
+    <div className="register-container">
+      <div className="register-box">
+        <h2>Register</h2>
+        {error && <p className="error-message">{error}</p>}
+        {success && <p className="success-message">{success}</p>}
+        <form onSubmit={handleRegister}>
+          <div className="form-group">
+            <label>Username</label>
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              required
+              placeholder="Enter your username"
+            />
+          </div>
+          <div className="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              placeholder="Enter your email"
+            />
+          </div>
+          <div className="form-group">
+            <label>Password</label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              placeholder="Enter your password"
+            />
+          </div>
+          <button type="submit" className="register-button">
+            Register
+          </button>
+        </form>
+        <p className="login-link">
+          Already have an account? <Link to="/login">Back to Login</Link>
+        </p>
       </div>
     </div>
   );
-}
+};
 
 export default Register;
